@@ -1,0 +1,36 @@
+[general]
+name=Localiser Parcelle Adresse (BAN)
+version=3.4.1
+qgisMinimumVersion=3.0
+
+description= Localiser Parcelle Adresse (BAN) permet de localiser des lieux : communes, parcelles cadastrales ou adresse
+
+about= Cette extension exploite (par le protocole <b>http</b>):<br><ol><li>le service Web du Ministère de la Transition Ecologique et Solidaire de géolocalisation avec plusieurs échelles administratives (Région, Département, Commune, Section, Parcelle) ;</li><li>le service web de géolocalisation à l'adresse Etalab.gouv.fr-BAN.</li></ol>Ces deux web services fonctionnent depuis des postes de travail ayant un accès internet, en utilisant la configuration réseau de qgis pour le protocole HTTP et le système de projection courant du projet pour toute transformation des coordonnées.<br><br>
+
+changelog=
+ 3.4.1 : evite une erreur Python quand le serveur ne repond pas en utf-8
+ 3.4 : recherche d'adresse possible dans la barre de recherche située en bas à gauche
+ 3.3 : ajout de l'auto-complétion pour la recherche à l'adresse
+ 3.2 : prise en compte code 2.6.2 et 2.6.1; propagation de la classe filteredComboBox sur toutes les combobox. 
+ 3.1 : ajout d'un message et contrôle si les propriétés SCR du projet courant pointent sur un SCR généré, même sans reprojection activée.        
+ 3.0 : migration pour QGIS 3.x
+ 2.6.2 : meilleure gestion de la fenetre "Localiser parcelle, adresse"
+ 2.6.1 : amelioration dans la gestion des erreurs
+ 2.6 : petites ameliorations (meilleure gestion des erreurs, de la position de la fenetre, plus rapide)
+ 2.5 : Changement mode appel reseau des web services (remplacement urllib2 par qgsnetworkmanager )
+ 2.4 : modif. dans le mode d'enregistrement des parametres de recherche
+ 2.3 : correction retour encoding nom de commune accentuee pour geocodage BAN et activation bouton MinimizeWindow
+ 2.2 : retrait accentuation metadata.txt pour fonctionner en 2.16 et encodage ANSI
+ 2.1 : modif. pour marcher avec des projections non EPSG et le WGS84
+
+icon=icone.png
+tags= PARCELLE, WEB SERVICES, CADASTRE, BAN
+
+author=Mathieu RAJERISON, Philippe DESBOEUFS, Frederic LASSERON, Christophe MASSE, Jean-Daniel LOMENEDE
+email=philippe.desboeufs@haute-garonne.gouv.fr
+homepage=http://geoinformations.metier.i2/qgis-plugin-localiser-une-parcelle-a1959.html
+repository=https://github.com/MTES-MCT/Localiser_Parcelle_Adresse_BAN
+tracker=https://github.com/MTES-MCT/Localiser_Parcelle_Adresse_BAN/issues
+
+experimental=False
+deprecated=False
