@@ -7,11 +7,15 @@ from qgis.core import (Qgis, QgsCoordinateReferenceSystem, QgsCoordinateTransfor
 from qgis.gui import (QgsMapCanvasItem, QgsVertexMarker)
 
 from io import StringIO
-from os.path import (dirname, join, exists)
+from os.path import (basename, dirname, join, exists)
 
-from localiserparcelle.ui_control import ui_control
+from .ui_control import ui_control
 from .http_finder import CartelieFinder
 from .ban_locator_filter import BanLocatorFilter
+
+from qgis.utils import iface, pluginMetadata
+cePlugin = basename( dirname(__file__) )
+PluginVersion = pluginMetadata(cePlugin,'version') ## Pour les changements, voir metadata.txt
 
 
 class plugin(QObject):
@@ -39,19 +43,32 @@ class plugin(QObject):
 		self.tmpGeometry = []
 		self.lstListes = [] # Les listes déroulantes de l'écran : region, dep, comm...
 		icon = join(dirname(__file__), "icone.png")
-		self.action = QAction(QIcon(icon), "Localiser Parcelle Adresse (Ban)", self.iface.mainWindow())
-		self.iface.mainWindow().setAttribute(Qt.WA_DeleteOnClose)
-		self.action.setWhatsThis("Aller de la region a la parcelle ou Adresse")
-		self.action.setStatusTip("Aller de la region a la parcelle ou Adresse")
+		win = iface.mainWindow()
+		self.pluginMenu = iface.pluginMenu().addMenu(QIcon(icon), "&Localiser Parcelle ou Adresse (Ban)")
+		
+		self.action = QAction(QIcon(icon), "&Localiser Parcelle Adresse (Ban)", win)
+		iface.mainWindow().setAttribute(Qt.WA_DeleteOnClose)
+		self.action.setWhatsThis("Localiser une commune, une parcelle ou une adresse")
+		self.action.setStatusTip("Localiser une commune, une parcelle ou une adresse")
 		self.action.triggered.connect(self.run)
-		self.iface.addToolBarIcon(self.action)
-		self.iface.addPluginToMenu("&Localiser Parcelle ou Adresse (Ban)", self.action)
-
-		self.barInfo = self.iface.messageBar() 
+		iface.addToolBarIcon(self.action)
+		#iface.addPluginToMenu("&Localiser Parcelle ou Adresse (Ban)", self.action)
+		self.pluginMenu.addAction( self.action )
+		
+		self.actionAide = QAction( QIcon( join(dirname(__file__),"help.png") ),
+			'A propos du plugin (version %s)'% PluginVersion, win )
+		self.actionAide.triggered.connect( self.getAbout )
+		self.pluginMenu.addAction( self.actionAide )
+		
+		self.barInfo = iface.messageBar() 
 		self.barInfo.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
 		self.dlg, self.marker = None, None
 		self.color = QColor(0, 255, 0, 125)
-
+		
+		self.dlg = None
+		return
+		
+		### OLD :
 		self.dlg = ui_control(None, Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint | Qt.WindowCloseButtonHint )
 		# fermeture de la fenetre du plugin on deroute sur une fonction interne
 		self.dlg.closeEvent = self.close_Event
@@ -78,23 +95,61 @@ class plugin(QObject):
 
 		self.dlg.opacityMarker.setOpacity(float((self.color.alpha()/255))) 
 		self.dlg.opacityMarker.opacityChanged.connect(self.setColor)
-		
+
 
 	def unload(self):
-		self.iface.removePluginMenu("&Localiser Parcelle ou Adresse (Ban)",self.action)
-		self.iface.removeToolBarIcon(self.action)
-		self.iface.deregisterLocatorFilter(self.locator_filter)
+		self.pluginMenu.parentWidget().removeAction(self.pluginMenu.menuAction()) # Remove from Extension menu
+		#self.iface.removePluginMenu("&Localiser Parcelle ou Adresse (Ban)",self.action)
+		iface.removeToolBarIcon(self.action)
+		iface.deregisterLocatorFilter(self.locator_filter)
 		self.locator_filter = None
-		
+
 	def close_Event(self, event): self.cleanMarker()
 
+
 	def run(self):
-		if self.lstListes: # Si l'écran a deja ete lancé dans cette session
+		if self.dlg: # Si l'écran a deja ete lancé dans cette session
 			self.dlg.show()
+			self.dlg.activateWindow()
+			print("self.dlg.lRegion.count() =", self.dlg.lRegion.count())
+			# Si liste des regions vide (soucis reseau ou autre) :
+			if self.dlg.lRegion.count()<2:  self.getListAction(0) # Charger la liste
 			return
-
-
+		
+		win= iface.mainWindow()
+		#self.dlg = ui_control(None, Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint | Qt.WindowCloseButtonHint )
+		self.dlg = ui_control( win, Qt.Tool | Qt.WindowTitleHint | Qt.WindowCloseButtonHint )
+		# Il faut positionner le dialog MANUELLEMENT, sinon Qt va le repositionner automatiquement à chaque hide -> show :
+		self.dlg.setGeometry(win.geometry().x()+50,win.geometry().y()+50,200,200) #"""
+		
+		# fermeture de la fenetre du plugin on deroute sur une fonction interne
+		self.dlg.closeEvent = self.close_Event
+		########################
+		#INSERTION DES SIGNAUX #
+		########################
+		self.dlg.bInfo.clicked.connect(self.getAbout)
+		#self.dlg.lastWindowClosed.connect(self.closeDlg)
+		self.dlg.bQuit.clicked.connect(self.closeDlg)
+		self.dlg.bErase.clicked.connect(self.cleanSearch)
+		self.dlg.lRegion.activated[int].connect(self.getListDepartements)
+		self.dlg.lDepartement.activated[int].connect(self.getListCommunes)
+		self.dlg.lCommune.activated[int].connect(self.getListSections)
+		self.dlg.lCommune.editTextChanged.connect(self.getListSectionsByText)
+		self.dlg.lCommune.activated[int].connect(self.updateCodecity)
+		#self.dlg.lCommune.currentIndexChanged.connect(self.updateCodecity)
+		self.dlg.lSection.activated[int].connect(self.getListParcelles)
+		self.dlg.bZoom.clicked.connect(self.getLocation)
+		self.dlg.adrin.returnPressed.connect(self.getLocationByAdress)
+		self.dlg.colorMarker.setColor(self.color)
+		self.dlg.colorMarker.colorChanged.connect(self.setColor)
+		self.dlg.dynaMarker.clicked.connect(self.setMarker)
+		self.dlg.scale.valueChanged.connect(self.setScale)
+		
+		self.dlg.opacityMarker.setOpacity(float((self.color.alpha()/255))) 
+		self.dlg.opacityMarker.opacityChanged.connect(self.setColor)
+		
 		self.dlg.show()
+		self.dlg.activateWindow()
 		##############################
 		# VARIABLES D'INITIALISATION #
 		##############################
@@ -123,7 +178,8 @@ class plugin(QObject):
 		self.lstListes[1].setCurrentIndex( dep+1 )
 		
 		self.getListAction(2)
-	
+
+
 	def cleanSearch(self):
 		self.dlg.commune_adresse_disable('')
 		for j in range(3, 5): self.lstListes[j].clear(); self.lstListes[j].addItem(self.lstListes_label[j])
@@ -148,10 +204,10 @@ class plugin(QObject):
 		try :
 				if index > -1 and index < (self.dlg.lCommune.maxIndex-1) : self.dlg.lCommune.setCurrentIndex(index); self.getListAction(3)
 		except : pass
-		
+
 	def getListSections(self, index): self.getListAction(3)
 	def getListParcelles(self, index): self.getListAction(4)
-	
+
 	#######################################	
 	# REINITIALISATION DES LISTES D'APRES #
 	#######################################
@@ -224,7 +280,7 @@ class plugin(QObject):
 
 		# Zoomer sur le point
 		self.zoomTo(x, y, x, y)
-	
+
 	def getLocationByParcelId(self):
 		###################################################
 		# RECUPERATION DE LA LISTE ACTIVE ET DE SON INDEX #
@@ -252,7 +308,7 @@ class plugin(QObject):
 		# Zoomer sur le rectangle
 		self.zoomTo(rect.xMinimum() , rect.yMaximum () , rect.xMaximum(), rect.yMinimum())
 
-		
+
 	def getTransformer(self, epsgCode):
 		transformer = QgsCoordinateTransform()
 		transformer.setSourceCrs(QgsCoordinateReferenceSystem(epsgCode))
@@ -323,15 +379,15 @@ class plugin(QObject):
 		
 		c = self.results[2][idx-1]["code"]
 		self.dlg.adrin.set_codecity(c)
-		
+
 	def getAbout(self):
-				icon = join(dirname(__file__), "icone.png")
-				html = "Ce plugin exploite (par le protocole <b>HTTP</b>):<br>"
-				html+= "<ol><li>le service Web du Ministère de la Transition Ecologique et Solidaire de géolocalisation avec plusieurs échelles administratives (Région, Département, Commune, Section, Parcelle) ;</li>"
-				html+= "<li>le service web de géolocalisation à l'adresse Etalab.gouv.fr-BAN.</li></ol>"
-				html+= "Ces deux web services fonctionnent depuis des postes de travail ayant un accès internet, en utilisant la configuration réseau de qgis pour le protocole HTTP et le système de projection courant du projet pour toute transformation des coordonnées.<br><br>"
-				html+= "<img src='%s'> Version 3.2 - juillet 2018" % icon.replace("\\", "/")
-				QMessageBox.information(self.dlg,"A propos", "%s" % html)
+		icon = join(dirname(__file__), "icone.png")
+		html = "Ce plugin exploite (par le protocole <b>HTTP</b>):<br>"
+		html+= "<ol><li>le service Web du Ministère de la Transition Ecologique et Solidaire de géolocalisation avec plusieurs échelles administratives (Région, Département, Commune, Section, Parcelle) ;</li>"
+		html+= "<li>le service web de géolocalisation à l'adresse Etalab.gouv.fr-BAN.</li></ol>"
+		html+= "Ces deux web services fonctionnent depuis des postes de travail ayant un accès internet, en utilisant la configuration réseau de qgis pour le protocole HTTP et le système de projection courant du projet pour toute transformation des coordonnées.<br><br>"
+		html+= "<img src='{}'> Version {}".format(icon.replace("\\","/"),PluginVersion)
+		QMessageBox.information(self.dlg,"A propos", "%s" % html)
 
 
 

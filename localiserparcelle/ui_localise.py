@@ -138,33 +138,52 @@ class Ui_Dialog(object):
 		self.optionGroupBox.setMinimumSize(QSize(320, 110))
 		
 		self.gridLayout_2.addWidget(self.optionGroupBox, 6, 1, 1, 4)
+		
+		optionsVLayout = QVBoxLayout() ###        
+		optionsVLayout.setSpacing(2)
+		optionsVLayout.setContentsMargins(10,10,10,10)
+		self.optionGroupBox.setLayout(optionsVLayout) ###        
+		
+		zoomHLayout = QHBoxLayout() ###        
+		optionsVLayout.addLayout(zoomHLayout) ###        
 
-		self.lblScale = QLabel(self.optionGroupBox)
+		self.lblScale = QLabel() #self.optionGroupBox)
 		self.lblScale.setObjectName("lblScale")
 		self.lblScale.setAlignment(Qt.AlignLeft)
-		self.lblScale.setGeometry(10, 20, 160, 25)
+		#self.lblScale.setGeometry(10, 20, 160, 25)
+		zoomHLayout.addWidget(self.lblScale) ###        
 		
-		self.scale = QSpinBox(self.optionGroupBox)
+		self.scale = QSpinBox() #self.optionGroupBox)
 		self.scale.setMinimum(10)
 		self.scale.setMaximum(5000)
 		self.scale.setSingleStep(10)
 		self.scale.setProperty("value", 50)
 		self.scale.setObjectName("scale")
-		self.scale.setGeometry(175, 15, 50, 25)
+		#self.scale.setGeometry(175, 15, 50, 25)
+		zoomHLayout.addWidget(self.scale) ###        
 
 		self.dynaMarker = QCheckBox(self.optionGroupBox)
 		self.dynaMarker.setObjectName("scale")
-		self.dynaMarker.setGeometry(10, 40, 125, 25)
+		#self.dynaMarker.setGeometry(10, 40, 125, 25)
+		optionsVLayout.addWidget(self.dynaMarker) ###        
+		
+		colorHLayout = QHBoxLayout() ###        
+		optionsVLayout.addLayout(colorHLayout) ###        
 		
 		self.lblColorOpacity = QLabel(self.optionGroupBox)
 		self.lblColorOpacity.setObjectName("lblColorOpacity")
 		self.lblColorOpacity.setAlignment(Qt.AlignLeft)
-		self.lblColorOpacity.setGeometry(10, 75, 120, 25)
+		#self.lblColorOpacity.setGeometry(10, 75, 120, 25)
+		colorHLayout.addWidget(self.lblColorOpacity) ###        
 		
-		self.colorMarker = QgsColorButton(self.optionGroupBox, '', None)
-		self.colorMarker.setGeometry(120, 70, 80, 25)
+		self.colorMarker = QgsColorButton(self.optionGroupBox,'',None) #self.colorMarker.setGeometry(120, 70, 80, 25)
+		colorHLayout.addWidget(self.colorMarker) ###        
 		self.opacityMarker = QgsOpacityWidget(self.optionGroupBox)
-		self.opacityMarker.setGeometry(210, 70, 200, 25)
+		spinBoxOpa = self.opacityMarker.layout().itemAt(1).widget()
+		spinBoxOpa.setShowClearButton(False)
+		spinBoxOpa.setMinimumSize( QSize(0,0) )
+		spinBoxOpa.setDecimals(0)
+		colorHLayout.addWidget(self.opacityMarker) #self.opacityMarker.setGeometry(210, 70, 200, 25)
 
 		self.gridLayout_2.addLayout(self.horizontalLayout_2, 10, 1, 1, 1)
 		self.gridLayout.addWidget(self.GroupBox, 0, 0, 1, 1)
@@ -208,7 +227,7 @@ class Ui_Dialog(object):
 		
 
 	def retranslateUi(self):
-		self.setWindowTitle(_translate("Dialog", "Localiser parcelle, adresse", None))
+		self.setWindowTitle(_translate("Dialog", "Localiser une commune, une parcelle ou une adresse", None))
 		self.bInfo.setText(_translate("Dialog", "à propos", None))
 		self.lCommune.setItemText(0, _translate("Dialog", "-- COMMUNE --", None))
 		self.lDepartement.setItemText(0, _translate("Dialog", "-- DEPARTEMENT --", None))
