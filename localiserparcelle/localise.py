@@ -10,7 +10,6 @@ from io import StringIO
 from os.path import (basename, dirname, join, exists)
 
 from .ui_control import ui_control
-from .http_finder import CartelieFinder
 from .ban_locator_filter import BanLocatorFilter
 
 from qgis.utils import iface, pluginMetadata
@@ -113,7 +112,7 @@ class plugin(QObject):
 			self.dlg.activateWindow()
 			print("self.dlg.lRegion.count() =", self.dlg.lRegion.count())
 			# Si liste des regions vide (soucis reseau ou autre) :
-			if self.dlg.lRegion.count()<2:  self.getListAction(0) # Charger la liste
+			#if self.dlg.lRegion.count()<2:  self.getListAction(0) # Charger la liste
 			return
 		
 		win= iface.mainWindow()
@@ -132,11 +131,16 @@ class plugin(QObject):
 		self.dlg.bQuit.clicked.connect(self.closeDlg)
 		self.dlg.bErase.clicked.connect(self.cleanSearch)
 		self.dlg.lRegion.activated[int].connect(self.getListDepartements)
+		self.dlg.bMajReg.released.connect( lambda: self.getListAction(0) )
+		
 		self.dlg.lDepartement.activated[int].connect(self.getListCommunes)
+		self.dlg.bMajDep.released.connect( lambda: self.getListAction(1) )
 		self.dlg.lCommune.activated[int].connect(self.getListSections)
 		self.dlg.lCommune.editTextChanged.connect(self.getListSectionsByText)
 		self.dlg.lCommune.activated[int].connect(self.updateCodecity)
 		#self.dlg.lCommune.currentIndexChanged.connect(self.updateCodecity)
+		self.dlg.bMajCom.released.connect( lambda: self.getListAction(2) )
+		
 		self.dlg.lSection.activated[int].connect(self.getListParcelles)
 		self.dlg.bZoom.clicked.connect(self.getLocation)
 		self.dlg.adrin.returnPressed.connect(self.getLocationByAdress)
@@ -150,15 +154,19 @@ class plugin(QObject):
 		
 		self.dlg.show()
 		self.dlg.activateWindow()
-		##############################
-		# VARIABLES D'INITIALISATION #
-		##############################
+		
+		### VARIABLES D'INITIALISATION
 		self.lstListes = [self.dlg.lRegion, self.dlg.lDepartement, self.dlg.lCommune, self.dlg.lSection, self.dlg.lParcelle]
 		self.lstListes_label = ["-- REGION --", "-- DEPARTEMENT --", "-- COMMUNE --", "-- SECTION --", "-- PARCELLE --"]
 		self.results = [1,2,3,4,5]
+		self.indexPrecedent = -2
 		
-		self.getListAction(0)
+		from .http_finder import CartelieFinder
+		self.cartelie = CartelieFinder(self.dlg)
 		
+		self.getListAction(0,False)
+		
+		### Rétablir la dernière région et dernier département choisi par le user:
 		s = QSettings() # QGIS options settings
 		scale = s.value("%szoom" % self.settings, "" )
 		if scale == "" : scale = "100"
@@ -167,17 +175,17 @@ class plugin(QObject):
 		region = s.value("%sregion" % self.settings, "" )
 		if region == "": return
 		region = int(region)
-		if region > self.dlg.lRegion.count()-2: return # Si le nb de regions a changé !
-		self.dlg.lRegion.setCurrentIndex( region+1 )
+		if region > self.dlg.lRegion.count()-1: return # Si le nb de regions a changé !
+		self.dlg.lRegion.setCurrentIndex( region )
 		
-		dep = s.value("%sdepartement" % self.settings, "" ) # Il faut le faire avant getListAction(1)
-		self.getListAction(1)
+		dep = s.value("%sdepartement" % self.settings, "" ) # Il faut le faire avant getListDepartements()
+		self.getListDepartements()
 		if dep == "" : return
 		dep = int(dep)
-		if dep > self.lstListes[1].count()-2: return # Si le nb de dep a changé !
-		self.lstListes[1].setCurrentIndex( dep+1 )
+		if dep > self.lstListes[1].count()-1: return # Si le nb de dep a changé !
+		self.lstListes[1].setCurrentIndex( dep )
 		
-		self.getListAction(2)
+		self.getListCommunes()
 
 
 	def cleanSearch(self):
@@ -194,15 +202,21 @@ class plugin(QObject):
 
 	def closeDlg(self): self.dlg.reject(); self.cleanMarker(); 
 
-	def getListDepartements(self, index): self.getListAction(1)
-	def getListCommunes(self, index): self.getListAction(2)
+	def getListDepartements(self, index=0):
+		self.getListAction(1,False)
+	def getListCommunes(self, index=0):
+		self.dlg.lCommune.activated[int].disconnect(self.getListSections) #Eviter req commune
+		self.dlg.lCommune.editTextChanged.disconnect(self.getListSectionsByText)
+		self.getListAction(2,False)
+		self.dlg.lCommune.activated[int].connect(self.getListSections)
+		self.dlg.lCommune.editTextChanged.connect(self.getListSectionsByText)
 	def getListSectionsByText(self, text): 
 		text = self.dlg.lCommune.currentText()
 		index = self.dlg.lCommune.findText("%s" % (text))
-		# try : print('getListSection'); print(self.results[3]); print('-----')#[index]["code"])
-		# except : pass
 		try :
-				if index > -1 and index < (self.dlg.lCommune.maxIndex-1) : self.dlg.lCommune.setCurrentIndex(index); self.getListAction(3)
+			if index > -1 and index < (self.dlg.lCommune.maxIndex-1):
+				self.dlg.lCommune.setCurrentIndex(index)
+				self.getListAction(3)
 		except : pass
 
 	def getListSections(self, index): self.getListAction(3)
@@ -211,27 +225,33 @@ class plugin(QObject):
 	#######################################	
 	# REINITIALISATION DES LISTES D'APRES #
 	#######################################
-	def getListAction(self, indexListe):
+	def getListAction(self, indexListe, MAJ=True):
+		if indexListe==3: # Pour eviter les requetes doublons generé par lCommune :
+			index = self.lstListes[indexListe-1].currentIndex()
+			if index==self.indexPrecedent: return
+			else:  self.indexPrecedent = index
+		
 		s = QSettings() 
 		for j in range(indexListe, 5):
-			self.lstListes[j].clear(); self.lstListes[j].addItem(self.lstListes_label[j])
-
+			self.lstListes[j].clear() #; self.lstListes[j].addItem(self.lstListes_label[j])
+		
 		#############################################
 		# RECUPERATION des DONNEES SERVICE CARTELIE #
 		#############################################
 		if indexListe > 0:
-			index = self.lstListes[indexListe-1].currentIndex()-1
+			index = self.lstListes[indexListe-1].currentIndex() # currentIndex()-1
 			if index < 0 or index >= len(self.results[indexListe-1]) : return
 			code = self.results[indexListe-1][index]["code"]
-			cartelie_finder = CartelieFinder(indexListe, code, parent=self.dlg)
+			result = self.cartelie.appel(indexListe, code, forcerMAJ=MAJ)
 		else:
-			cartelie_finder = CartelieFinder(indexListe, parent=self.dlg)
-
-		result = cartelie_finder.get_data()
+			result = self.cartelie.appel(indexListe, forcerMAJ=MAJ)
+		
 		if not result:
-				QMessageBox.warning( self.dlg, u"Erreur réseau", u'Serveur de localisation (Cartélie) injoignable :'
-				+u"\n 1. Vérifier vos paramètres réseau:\n   Préférences > Options > Réseau > Proxy\n 2. Réessayer plus tard ..." )
-				return
+			self.dlg.set_dialog_busy(False)
+			QMessageBox.warning( self.dlg, "Erreur réseau", 'Serveur de localisation (Cartélie) injoignable :'
+				+"\n 1. Vérifier vos paramètres réseau:\n   Préférences > Options > Réseau > Proxy"
+				+"\n 2. Réessayer plus tard ..." )
+			return
 
 		self.results[indexListe] = result
 		###################################
@@ -246,15 +266,25 @@ class plugin(QObject):
 			self.lstListes[indexListe].addItem(libelle)
 		try : self.lstListes[indexListe].getMaxIndex()
 		except : pass
-		#######################################
-		# Enregistrer parametres de recherche #
-		#######################################
-		# enregistre le choix de la région ou du dép.
-		if   indexListe == 0 : self.dlg.commune_adresse_disable('')
-		elif indexListe == 1 : self.dlg.commune_adresse_disable(''); s.setValue("%sregion" % self.settings, index ); s.setValue("%sdepartement" % self.settings, "" )
-		elif indexListe == 2 : self.dlg.commune_adresse_disable(''); s.setValue("%sdepartement" % self.settings, index )
-		elif indexListe == 3 : self.dlg.commune_adresse_enable(self.dlg.lCommune.currentText())
-		## /Enregistrer parametres de recherche
+		
+		self.lstListes[indexListe].setCurrentIndex(-1)
+		
+		####  Enregistrer parametres de recherche ####
+		if   indexListe == 0 :
+			self.dlg.commune_adresse_disable('')
+		elif indexListe == 1 : # Enregistre le choix de la région
+			self.dlg.commune_adresse_disable('')
+			s.setValue("%sregion" % self.settings, index )
+			s.setValue("%sdepartement" % self.settings, "" )
+		elif indexListe == 2 : # enregistre le choix du dép.
+			self.dlg.commune_adresse_disable('')
+			s.setValue("%sdepartement" % self.settings, index )
+		elif indexListe == 3 :
+			self.dlg.commune_adresse_enable(self.dlg.lCommune.currentText())
+		# FIN de : Enregistrer parametres de recherche
+		
+		self.dlg.set_dialog_busy(False)
+
 
 	def getLocation(self):
 		# Si tab Parcelle activer recherche parcelle
@@ -287,14 +317,14 @@ class plugin(QObject):
 		###################################################
 		indexListe = None
 		for i in range(4,-1,-1): 
-			if self.lstListes[i].currentIndex() > 0 :
+			if self.lstListes[i].currentIndex() > -1:  #0 :
 				# RECUPERATION DE L'ID DE LA LISTE
 				indexListe = i
 				break
 		if indexListe == None:
 			QMessageBox.information(self.iface.mainWindow(), "Zoom impossible",unicode("Pas si vite! Vous n'avez même pas choisi de région où aller !",'UTF-8'))
 		else:
-			index_lActuelle = self.lstListes[indexListe].currentIndex()-1
+			index_lActuelle = self.lstListes[indexListe].currentIndex() # -1
 		
 		result = self.results[indexListe][index_lActuelle]
 
@@ -351,6 +381,7 @@ class plugin(QObject):
 				mc.setExtent(rect)
 				mc.refresh()
 
+
 	def zoomTo(self, x, y, x1, y1):
 		# Zoomer sur rectangle englobant
 		mc = self.iface.mapCanvas()
@@ -374,11 +405,12 @@ class plugin(QObject):
 		scale = self.dlg.scale.value()
 		s.setValue("%szoom" % self.settings, scale )
 
+
 	def updateCodecity(self, idx):
 		"""met à jour le citycode pour filtrer la requete par code insee"""
-		
-		c = self.results[2][idx-1]["code"]
+		c = self.results[2][idx]["code"] #c = self.results[2][idx-1]["code"]
 		self.dlg.adrin.set_codecity(c)
+
 
 	def getAbout(self):
 		icon = join(dirname(__file__), "icone.png")
@@ -388,6 +420,7 @@ class plugin(QObject):
 		html+= "Ces deux web services fonctionnent depuis des postes de travail ayant un accès internet, en utilisant la configuration réseau de qgis pour le protocole HTTP et le système de projection courant du projet pour toute transformation des coordonnées.<br><br>"
 		html+= "<img src='{}'> Version {}".format(icon.replace("\\","/"),PluginVersion)
 		QMessageBox.information(self.dlg,"A propos", "%s" % html)
+
 
 
 
@@ -402,6 +435,7 @@ class basicLocationMarker(QgsVertexMarker):
 		self.setIconSize(10)
 		self.setIconType(QgsVertexMarker.ICON_X) # ICON_BOX ICON_CROSS, ICON_X
 		self.setPenWidth(2)
+
 
 
 

@@ -4,6 +4,7 @@ from qgis.PyQt.QtCore import (QMetaObject, QModelIndex, QSize, QSortFilterProxyM
 from qgis.PyQt.QtGui import (QBrush, QColor, QFont, QIcon)
 from qgis.PyQt.QtWidgets import *
 from qgis.gui import (QgsBusyIndicatorDialog, QgsCollapsibleGroupBox, QgsColorButton, QgsFilterLineEdit, QgsOpacityWidget)
+from qgis.core import *
 
 from os.path import (dirname, join)
 import time
@@ -41,21 +42,49 @@ class Ui_Dialog(object):
 		self.gridLayout_2.setSizeConstraint(QLayout.SetDefaultConstraint)
 		self.gridLayout_2.setMargin(10)
 		self.gridLayout_2.setObjectName("gridLayout_2")
-
+		
 		self.lRegion = QComboBox(self.GroupBox)
 		self.lRegion.setObjectName("lRegion")
 		self.lRegion.setLayoutDirection(Qt.LeftToRight)
-		self.gridLayout_2.addWidget(self.lRegion, 0, 1, 1, 4)
-
+		#self.lRegion.setSizeAdjustPolicy( QComboBox.AdjustToContentsOnFirstShow )
+		self.lRegion.setEditable(True)
+		self.lRegion.setInsertPolicy(QComboBox.NoInsert)
+		self.lRegion.lineEdit().setPlaceholderText("Choisir la région")
+		self.gridLayout_2.addWidget(self.lRegion, 0, 1, 1, 3)
+		# 
+		self.bMajReg = QPushButton(QgsApplication.getThemeIcon('/mActionRefresh.svg'),'') #'Rafraichir')
+		self.bMajReg.setToolTip("Mettre à jour la liste des régions par le web")
+		self.bMajReg.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+		self.gridLayout_2.addWidget(self.bMajReg, 0, 4, 1, 1)
+		
 		self.lDepartement = QComboBox(self.GroupBox)
 		self.lDepartement.setObjectName("lDepartement")
-		self.gridLayout_2.addWidget(self.lDepartement, 1, 1, 1, 4)
-
+		#self.lDepartement.setSizeAdjustPolicy( QComboBox.AdjustToContentsOnFirstShow )
+		self.lDepartement.setEditable(True)
+		self.lDepartement.setInsertPolicy(QComboBox.NoInsert)
+		self.lDepartement.lineEdit().setPlaceholderText("Choisir le département")
+		self.gridLayout_2.addWidget(self.lDepartement, 1, 1, 1, 3)
+		# 
+		self.bMajDep = QPushButton(QgsApplication.getThemeIcon('/mActionRefresh.svg'),'')
+		self.bMajDep.setToolTip("Mettre à jour la liste des départements par le web")
+		self.bMajDep.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+		self.gridLayout_2.addWidget(self.bMajDep, 1, 4, 1, 1)
+		
 		self.lCommune = filteredComboBox(self.GroupBox)
 		self.lCommune.setObjectName("lCommune")
 		self.lCommune.setToolTip("Choisir la commune dans la liste ou saisir son code INSEE ou les premiers caractères de son nom") ###
-		self.gridLayout_2.addWidget(self.lCommune, 2, 1, 1, 4)
-
+		#self.lCommune.setSizeAdjustPolicy( QComboBox.AdjustToContentsOnFirstShow )
+		self.lCommune.setEditable(True)
+		self.lCommune.setInsertPolicy(QComboBox.NoInsert)
+		self.lCommune.lineEdit().setPlaceholderText("Choisir la commune")
+		self.gridLayout_2.addWidget(self.lCommune, 2, 1, 1, 3)
+		# 
+		self.bMajCom = QPushButton(QgsApplication.getThemeIcon('/mActionRefresh.svg'),'')
+		self.bMajCom.setToolTip("Mettre à jour la liste des communes par le web")
+		self.bMajCom.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+		self.gridLayout_2.addWidget(self.bMajCom, 2, 4, 1, 1)
+		
+		
 		self.infracommune = QTabWidget(self.GroupBox)
 		self.infracommune.setObjectName("infracommune")
 		self.infracommune.setEnabled(True)
@@ -74,15 +103,19 @@ class Ui_Dialog(object):
 		self.lSection = QComboBox(self.parcelle)
 		self.lSection.setGeometry(20, 10, 160, 25)
 		self.lSection.setObjectName("lSection")
-		self.lSection.addItem("")
+		#self.lSection.addItem("")
+		self.lSection.setEditable(True)
+		self.lSection.setInsertPolicy(QComboBox.NoInsert)
+		self.lSection.lineEdit().setPlaceholderText("Choisir la section")
 		
-		self.lParcelle = filteredComboBox(self.parcelle) #QComboBox(self.parcelle)
+		self.lParcelle = QComboBox(self.parcelle) #filteredComboBox(self.parcelle) #
 		self.lParcelle.setEditable(True)
 		self.lParcelle.setInsertPolicy(QComboBox.NoInsert)
-		self.lParcelle.setModelColumn(0)
+		self.lParcelle.lineEdit().setPlaceholderText("Choisir la parcelle")
+		#self.lParcelle.setModelColumn(0)
 		self.lParcelle.setGeometry(20, 50, 160, 25)
 		self.lParcelle.setObjectName("lParcelle")
-		self.lParcelle.addItem("")
+		#self.lParcelle.addItem("")
 		
 		icon = join(dirname(__file__), "parcelle.png")
 		self.infracommune.addTab(self.parcelle, QIcon(icon), "")
@@ -113,22 +146,28 @@ class Ui_Dialog(object):
 		self.horizontalLayout = QHBoxLayout()
 		self.horizontalLayout.setSpacing(7)
 		self.horizontalLayout.setObjectName("horizontalLayout")
-
-		self.busyIndicator = QgsBusyIndicatorDialog()
-		self.busyIndicator.setVisible(False)
-		self.horizontalLayout.addWidget(self.busyIndicator)
-
+		self.gridLayout_2.addLayout(self.horizontalLayout, 4, 1, 1, 4)
+		#
 		self.bErase = QPushButton(self.GroupBox)
 		self.bErase.setAutoDefault(False)
 		self.bErase.setObjectName("bErase")
 		self.horizontalLayout.addWidget(self.bErase)
-
+		#
 		self.bZoom = QPushButton(self.GroupBox)
 		self.bZoom.setDefault(True)
 		self.bZoom.setObjectName("bZoom")
-
 		self.horizontalLayout.addWidget(self.bZoom)
-		self.gridLayout_2.addLayout(self.horizontalLayout, 4, 1, 1, 1)
+		#
+		self.busyIndicator = QgsBusyIndicatorDialog('', self, fl=Qt.WindowFlags() ) #Widget)
+		self.busyIndicator.setVisible(False)
+		self.busyIndicator.setMinimumSize(50,10)
+		try: # Pour reduire sa largeur :
+			self.busyIndicator.children()[0].setContentsMargins(0,0,0,0)
+			self.busyIndicator.children()[0].setSpacing(0)
+			self.busyIndicator.children()[1].setVisible(False)
+			self.busyIndicator.children()[2].setTextVisible(False)
+		except: pass
+		self.horizontalLayout.addWidget(self.busyIndicator)
 		
 		self.horizontalLayout_2 = QHBoxLayout()
 		self.horizontalLayout_2.setObjectName("horizontalLayout_2")
@@ -214,12 +253,14 @@ class Ui_Dialog(object):
 		self.retranslateUi()
 		self.infracommune.setCurrentIndex(1)
 		QMetaObject.connectSlotsByName(self)
+		self.lCommune.setFocus()
 		self.setTabOrder(self.lCommune, self.lSection)
 		self.setTabOrder(self.lSection, self.lParcelle)
-		self.setTabOrder(self.lParcelle, self.lDepartement)
+		self.setTabOrder(self.lParcelle, self.adrin)
+		self.setTabOrder(self.adrin, self.bZoom)
+		self.setTabOrder(self.bZoom, self.lRegion)
+		self.setTabOrder(self.lRegion, self.lDepartement)
 		self.setTabOrder(self.lDepartement, self.bInfo)
-		self.setTabOrder(self.bInfo, self.lRegion)
-		self.setTabOrder(self.lRegion, self.adrin)
 		
 
 	def resizeEvent(self, event) :

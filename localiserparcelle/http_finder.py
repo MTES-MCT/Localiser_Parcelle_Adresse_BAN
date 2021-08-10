@@ -25,14 +25,14 @@
 #---------------------------------------------------------------------
 
 import json
-from PyQt5.QtCore import QObject, QUrl, QUrlQuery, QEventLoop, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QObject, QUrl, QUrlQuery, QEventLoop, pyqtSignal, pyqtSlot, QSettings, QFile, QDir
 from PyQt5.QtNetwork import QNetworkRequest, QNetworkReply
 from PyQt5.QtWidgets import QApplication
 from qgis.core import QgsNetworkAccessManager, Qgis
-from qgis.core import QgsLogger
+from qgis.core import QgsMessageLog, QgsLogger
 from qgis.gui import QgsMessageBar
 from qgis.utils import iface
-
+import os, codecs
 
 
 class HttpFinder(QObject):
@@ -48,16 +48,16 @@ class HttpFinder(QObject):
 		self.message.connect(self.display_message)
 
 	def send_request(self, url, params, headers={}):
-		url = QUrl(url)
-		q = QUrlQuery(url)
+		self.url = QUrl(url)
+		q = QUrlQuery(self.url)
 		for key, value in params.items():
 				q.addQueryItem(key, value)
-		url.setQuery(q)
-		QgsLogger.debug('Request: {}'.format(url.toEncoded()))
-		request = QNetworkRequest(url)
+		self.url.setQuery(q)
+		#QgsLogger.debug('Request: {}'.format(self.url.toEncoded()))
+		request = QNetworkRequest(self.url)
 		for key, value in headers.items():
 			request.setRawHeader(key, value)
-
+		
 		if self.asynchonous:
 			if self.reply is not None:
 				self.reply.finished.disconnect(self.reply_finished)
@@ -82,9 +82,9 @@ class HttpFinder(QObject):
 	def _finish(self):
 		self.finished.emit(self)
 		try:
-				self.parent().set_dialog_busy(False)
+			self.parent().set_dialog_busy(False)
 		except AttributeError:
-				pass
+			pass
 
 	def stop(self):
 		if self.reply:
@@ -93,19 +93,20 @@ class HttpFinder(QObject):
 		self._finish()
 
 	def reply_finished(self):
+		self.erreurs = ''
 		error = self.reply.error()
 		if error == QNetworkReply.NoError:
-				#response_text = self.reply.readAll().data().decode('utf-8')
-				response_text = self.reply.readAll().data().decode('utf-8','ignore')
-				QgsLogger.debug('Response: {}'.format(response_text))
-				try:
-						self.data = json.loads(response_text)
-						self.load_data(self.data)
-				except ValueError:
-						self.message.emit(self.tr('The service did not reply properly. Please check service definition.'), Qgis.Warning)
+			self.dataText = self.reply.readAll().data().decode('utf-8','ignore')
+			#QgsLogger.debug('Response: {}'.format(self.dataText))
+			try:
+				self.data = json.loads(self.dataText)
+				self.load_data(self.data)
+			except ValueError:
+				self.message.emit(self.tr('The service did not reply properly. Please check service definition.'), Qgis.Warning)
 		else:
-				error_message = self.get_error_message(error)
-				self.message.emit(error_message, Qgis.Warning)
+			self.erreurs = self.get_error_message(error)
+			self.message.emit( self.erreurs, Qgis.Warning )
+			#QgsMessageLog.logMessage("Erreur HttpFinder pour {}: {}".format(self.url.toString(), self.erreurs),"LocaliserParcelleAdresse",Qgis.Warning,False)
 		self._finish()
 		self.reply.deleteLater()
 		self.reply = None
@@ -262,20 +263,66 @@ class AdresseBanFinder(HttpFinder):
 
 
 class CartelieFinder(HttpFinder):
-
-	def __init__(self, indexListe, code=None, parent=None):
+	def __init__(self, parent=None): #, indexListe, code=None, parent=None):
 		HttpFinder.__init__(self, parent)
 		self.url = 'http://cartelie.application.developpement-durable.gouv.fr/cartelie/localize?'
-		self.params = {
-			'niveauBase': '0',
-			'niveau': '0',
-			'projection':'EPSG_2154',
-		}
+		self.params = { 'niveauBase':'0', 'niveau':'0', 'projection':'EPSG_2154' }
+		
+		## Dossier où enregistrer les datas web en cache pour limiter les requetes
+		dossierCache = 'plugin_LocaliserParcelle'
+		self.cheminCache= None 
+		iniFic= QSettings().fileName()
+		if QFile.exists(iniFic): #Si la config QGIS est stockee dans QGIS/QGIS3.ini
+			iniDir= os.path.dirname(iniFic)
+			if QDir(iniDir +os.sep +dossierCache).exists() or QDir(iniDir).mkdir(dossierCache):
+				self.cheminCache= os.path.abspath(iniDir +os.sep +dossierCache)
+
+
+	def appel(self, indexListe, code=None, parent=None, forcerMAJ=False): ## Interroger API ou cache
+		""" Interroger API (url+param) ou bien 1 fichier cache "nomCache.json"
+			Si nomCache est défini :
+			 # On cherche le fichier: self.cheminCache +os.sep +nomCache +'.json'
+			 # S'il existe on le lit (pas de requête http)
+			 # S'il n'existe pas : requête http  puis  enregistrer le résultat dans fichier.
+		"""
+		self.data = False
+		
+		if indexListe<3 and self.cheminCache: ## Lire fichier nomCache si déjà en cache
+			if indexListe==0:  nomCache = 'regions'
+			elif indexListe==1:  nomCache = 'departements' +str(code)
+			else:  nomCache = 'communes' +str(code)
+			ficCache= self.cheminCache +os.sep +nomCache +'.json'
+			if not forcerMAJ and QFile.exists(ficCache): # Lire fichier nomCache sauf si c'est une MAJ
+				with codecs.open(ficCache, 'r', 'utf-8', 'ignore') as F:
+					self.data = F.read()
+				if self.data:
+					#print('# Liste "'+nomCache+'" lue depuis: ' +ficCache )
+					return json.loads(self.data)
+		else:
+			ficCache= False
+		
 		if indexListe > 0:
 			self.params['niveau'] = str(indexListe)
 			self.params['parent'] = str(code)
 		self.search_results = []
 		self.send_request(self.url, self.params)
+		
+		if not self.data:
+			print("Erreur réseau :", self.erreurs) #self.log("Erreur réseau: "+ self.erreurs, 'erreur')
+			##self.erreurs += "Erreur réseau: {}\n {} \n {}".format(self.erreurs,url,str(params))
+			#self.messageBar.pushMessage('Erreur réseau', 'URL injoignable : '+url, Qgis.Warning, 10)
+			return False
+		if self.data==[]:
+			print("Aucune donnée reçue : ", self.url, self.params) #self.log("Aucune donnée reçue: "+ url, 'erreur')
+			#self.messageBar.pushMessage('Aucune donnée reçue', 'URL : '+url, Qgis.Warning, 5)
+			return False
+		
+		if ficCache: ## Si chemin ficCache défini, sauvegarder self.data en cache:
+			with codecs.open(ficCache, 'w', 'utf-8', 'ignore') as F:
+				F.write(self.dataText)
+		
+		return self.data
+
 
 	def load_data(self, data):
 		pass

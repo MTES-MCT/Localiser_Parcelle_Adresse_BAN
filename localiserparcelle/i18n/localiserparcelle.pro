@@ -1,4 +1,4 @@
 SOURCES = ../localise.py \
-../http_finder.py
+		../http_finder.py
 
-TRANSLATIONS = localiserparcelle.ts
+TRANSLATIONS = localiseparcelle_fr.ts
