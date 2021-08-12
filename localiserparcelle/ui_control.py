@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from qgis.PyQt.QtCore import QSettings, Qt
 from qgis.PyQt.QtWidgets import QApplication, QDialog
-from localiserparcelle.ui_localise import Ui_Dialog
+from .ui_localise import Ui_Dialog
 
 class ui_control(QDialog, Ui_Dialog):
 	def __init__(self, parent, fl):

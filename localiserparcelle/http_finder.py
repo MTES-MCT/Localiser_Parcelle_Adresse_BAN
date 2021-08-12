@@ -48,13 +48,13 @@ class HttpFinder(QObject):
 		self.message.connect(self.display_message)
 
 	def send_request(self, url, params, headers={}):
-		self.url = QUrl(url)
-		q = QUrlQuery(self.url)
+		url = QUrl(url)
+		q = QUrlQuery(url)
 		for key, value in params.items():
 				q.addQueryItem(key, value)
-		self.url.setQuery(q)
-		#QgsLogger.debug('Request: {}'.format(self.url.toEncoded()))
-		request = QNetworkRequest(self.url)
+		url.setQuery(q)
+		#QgsLogger.debug('Request: {}'.format(url.toEncoded()))
+		request = QNetworkRequest(url)
 		for key, value in headers.items():
 			request.setRawHeader(key, value)
 		
@@ -106,7 +106,7 @@ class HttpFinder(QObject):
 		else:
 			self.erreurs = self.get_error_message(error)
 			self.message.emit( self.erreurs, Qgis.Warning )
-			#QgsMessageLog.logMessage("Erreur HttpFinder pour {}: {}".format(self.url.toString(), self.erreurs),"LocaliserParcelleAdresse",Qgis.Warning,False)
+			#QgsMessageLog.logMessage("Erreur HttpFinder pour {}: {}".format(self.reply.url().toString(), self.erreurs),"LocaliserParcelleAdresse",Qgis.Warning,False)
 		self._finish()
 		self.reply.deleteLater()
 		self.reply = None
@@ -223,7 +223,7 @@ class HttpFinder(QObject):
 class AdresseBanFinder(HttpFinder):
 	def __init__(self, search, limit='10', codecity=None, parent=None):
 		HttpFinder.__init__(self, parent)
-		self.url = 'https://api-adresse.data.gouv.fr/search/'
+		self.URL = 'https://api-adresse.data.gouv.fr/search/'
 		self.search = search
 		self.limit = limit
 		self.params = {
@@ -234,7 +234,7 @@ class AdresseBanFinder(HttpFinder):
 				self.params['citycode'] = codecity
 		self.search_results = []
 		self.suggestions = []
-		self.send_request(self.url, self.params)
+		self.send_request(self.URL, self.params)
 
 	def load_data(self, data):
 		self.suggestions = []
@@ -265,7 +265,7 @@ class AdresseBanFinder(HttpFinder):
 class CartelieFinder(HttpFinder):
 	def __init__(self, parent=None): #, indexListe, code=None, parent=None):
 		HttpFinder.__init__(self, parent)
-		self.url = 'http://cartelie.application.developpement-durable.gouv.fr/cartelie/localize?'
+		self.URL = 'http://cartelie.application.developpement-durable.gouv.fr/cartelie/localize?'
 		self.params = { 'niveauBase':'0', 'niveau':'0', 'projection':'EPSG_2154' }
 		
 		## Dossier où enregistrer les datas web en cache pour limiter les requetes
@@ -301,20 +301,23 @@ class CartelieFinder(HttpFinder):
 		else:
 			ficCache= False
 		
-		if indexListe > 0:
-			self.params['niveau'] = str(indexListe)
+		self.params['niveau'] = str(indexListe)
+		if indexListe==0:
+			if 'parent' in self.params: del self.params['parent']
+		else:
 			self.params['parent'] = str(code)
 		self.search_results = []
-		self.send_request(self.url, self.params)
+		self.send_request(self.URL, self.params)
+		#print("Appel Cartelie : ", self.URL, self.params)		#print("self.data : ", self.data)
 		
 		if not self.data:
 			print("Erreur réseau :", self.erreurs) #self.log("Erreur réseau: "+ self.erreurs, 'erreur')
-			##self.erreurs += "Erreur réseau: {}\n {} \n {}".format(self.erreurs,url,str(params))
-			#self.messageBar.pushMessage('Erreur réseau', 'URL injoignable : '+url, Qgis.Warning, 10)
+			##self.erreurs += "Erreur réseau: {}\n {} \n {}".format(self.erreurs,self.URL,str(self.params))
+			#self.messageBar.pushMessage('Erreur réseau', 'URL injoignable : '+self.URL, Qgis.Warning, 10)
 			return False
 		if self.data==[]:
-			print("Aucune donnée reçue : ", self.url, self.params) #self.log("Aucune donnée reçue: "+ url, 'erreur')
-			#self.messageBar.pushMessage('Aucune donnée reçue', 'URL : '+url, Qgis.Warning, 5)
+			print("Aucune donnée reçue : ", self.URL, self.params)
+			#self.messageBar.pushMessage('Aucune donnée reçue', 'URL : '+self.URL, Qgis.Warning, 5)
 			return False
 		
 		if ficCache: ## Si chemin ficCache défini, sauvegarder self.data en cache:
