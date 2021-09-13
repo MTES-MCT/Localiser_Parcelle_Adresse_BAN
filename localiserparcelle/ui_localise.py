@@ -53,7 +53,7 @@ class Ui_Dialog(object):
 		self.gridLayout_2.addWidget(self.lRegion, 0, 1, 1, 3)
 		# 
 		self.bMajReg = QPushButton(QgsApplication.getThemeIcon('/mActionRefresh.svg'),'') #'Rafraichir')
-		self.bMajReg.setToolTip("Mettre à jour la liste des régions par le web")
+		self.bMajReg.setToolTip("Mettre à jour la liste des régions")
 		self.bMajReg.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 		self.gridLayout_2.addWidget(self.bMajReg, 0, 4, 1, 1)
 		
@@ -66,7 +66,7 @@ class Ui_Dialog(object):
 		self.gridLayout_2.addWidget(self.lDepartement, 1, 1, 1, 3)
 		# 
 		self.bMajDep = QPushButton(QgsApplication.getThemeIcon('/mActionRefresh.svg'),'')
-		self.bMajDep.setToolTip("Mettre à jour la liste des départements par le web")
+		self.bMajDep.setToolTip("Mettre à jour la liste des départements")
 		self.bMajDep.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 		self.gridLayout_2.addWidget(self.bMajDep, 1, 4, 1, 1)
 		
@@ -80,7 +80,7 @@ class Ui_Dialog(object):
 		self.gridLayout_2.addWidget(self.lCommune, 2, 1, 1, 3)
 		# 
 		self.bMajCom = QPushButton(QgsApplication.getThemeIcon('/mActionRefresh.svg'),'')
-		self.bMajCom.setToolTip("Mettre à jour la liste des communes par le web")
+		self.bMajCom.setToolTip("Mettre à jour la liste des communes")
 		self.bMajCom.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 		self.gridLayout_2.addWidget(self.bMajCom, 2, 4, 1, 1)
 		
@@ -279,12 +279,12 @@ class Ui_Dialog(object):
 		self.ladrin.setText(_translate("Dialog", "N° et /ou voie :", None))
 		self.infracommune.setTabText(self.infracommune.indexOf(self.adresse), _translate("Dialog", "Adresse", None))
 		self.bErase.setText(_translate("Dialog", "Effacer", None))
-		self.bQuit.setText(_translate("Dialog", "Quitter", None))
+		self.bQuit.setText(_translate("Dialog", "Fermer", None))
 		self.bZoom.setText(_translate("Dialog", "Localiser", None))
 		self.optionGroupBox.setTitle("%s :" % _translate("Dialog", "Options du marqueur", None))
 		self.lblScale.setText("%s :" % _translate("Dialog", "Zoom élément trouvé  (m)", None))
 		self.lblColorOpacity.setText("%s :" % _translate("Dialog", "Couleur et opacité", None))
-		self.dynaMarker.setText(_translate("Dialog", "Dynamique", None))
+		self.dynaMarker.setText(_translate("Dialog", "Marqueur animé", None))
 
 
 
