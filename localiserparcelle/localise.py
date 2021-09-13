@@ -103,7 +103,7 @@ class plugin(QObject):
 		iface.deregisterLocatorFilter(self.locator_filter)
 		self.locator_filter = None
 
-	def close_Event(self, event): self.cleanMarker()
+	#def close_Event(self, event): self.cleanMarker()
 
 
 	def run(self):
@@ -122,7 +122,7 @@ class plugin(QObject):
 		self.dlg.setGeometry(win.geometry().x()+50,win.geometry().y()+50,200,200) #"""
 		
 		# fermeture de la fenetre du plugin on deroute sur une fonction interne
-		self.dlg.closeEvent = self.close_Event
+		#self.dlg.closeEvent = self.close_Event
 		########################
 		#INSERTION DES SIGNAUX #
 		########################
@@ -200,7 +200,7 @@ class plugin(QObject):
 		self.marker = None
 		self.tempGeometry = []
 
-	def closeDlg(self): self.dlg.reject(); self.cleanMarker(); 
+	def closeDlg(self): self.dlg.reject(); #self.cleanMarker(); 
 
 	def getListDepartements(self, index=0):
 		self.getListAction(1,False)
