@@ -279,7 +279,7 @@ class Ui_Dialog(object):
 		self.ladrin.setText(_translate("Dialog", "N° et /ou voie :", None))
 		self.infracommune.setTabText(self.infracommune.indexOf(self.adresse), _translate("Dialog", "Adresse", None))
 		self.bErase.setText(_translate("Dialog", "Effacer", None))
-		self.bQuit.setText(_translate("Dialog", "Fermer", None))
+		self.bQuit.setText(_translate("Dialog", "Masquer", None))
 		self.bZoom.setText(_translate("Dialog", "Localiser", None))
 		self.optionGroupBox.setTitle("%s :" % _translate("Dialog", "Options du marqueur", None))
 		self.lblScale.setText("%s :" % _translate("Dialog", "Zoom élément trouvé  (m)", None))
