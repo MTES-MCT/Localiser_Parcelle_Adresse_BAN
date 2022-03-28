@@ -64,57 +64,6 @@ class plugin(QObject):
 		self.dlg, self.marker = None, None
 		self.color = QColor(0, 255, 0, 125)
 		
-		self.dlg = None
-		return
-		
-		### OLD :
-		self.dlg = ui_control(None, Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint | Qt.WindowCloseButtonHint )
-		# fermeture de la fenetre du plugin on deroute sur une fonction interne
-		self.dlg.closeEvent = self.close_Event
-		########################
-		#INSERTION DES SIGNAUX #
-		########################
-		self.dlg.bInfo.clicked.connect(self.getAbout)
-		#self.dlg.lastWindowClosed.connect(self.closeDlg)
-		self.dlg.bQuit.clicked.connect(self.closeDlg)
-		self.dlg.bErase.clicked.connect(self.cleanSearch)
-		self.dlg.lRegion.activated[int].connect(self.getListDepartements)
-		self.dlg.lDepartement.activated[int].connect(self.getListCommunes)
-		self.dlg.lCommune.activated[int].connect(self.getListSections)
-		self.dlg.lCommune.editTextChanged.connect(self.getListSectionsByText)
-		self.dlg.lCommune.activated[int].connect(self.updateCodecity)
-		#self.dlg.lCommune.currentIndexChanged.connect(self.updateCodecity)
-		self.dlg.lSection.activated[int].connect(self.getListParcelles)
-		self.dlg.bZoom.clicked.connect(self.getLocation)
-		self.dlg.adrin.returnPressed.connect(self.getLocationByAdress)
-		self.dlg.colorMarker.setColor(self.color)
-		self.dlg.colorMarker.colorChanged.connect(self.setColor)
-		self.dlg.dynaMarker.clicked.connect(self.setMarker)
-		self.dlg.scale.valueChanged.connect(self.setScale)
-
-		self.dlg.opacityMarker.setOpacity(float((self.color.alpha()/255))) 
-		self.dlg.opacityMarker.opacityChanged.connect(self.setColor)
-
-
-	def unload(self):
-		self.pluginMenu.parentWidget().removeAction(self.pluginMenu.menuAction()) # Remove from Extension menu
-		#self.iface.removePluginMenu("&Localiser Parcelle ou Adresse (Ban)",self.action)
-		iface.removeToolBarIcon(self.action)
-		iface.deregisterLocatorFilter(self.locator_filter)
-		self.locator_filter = None
-
-	#def close_Event(self, event): self.cleanMarker()
-
-
-	def run(self):
-		if self.dlg: # Si l'écran a deja ete lancé dans cette session
-			self.dlg.show()
-			self.dlg.activateWindow()
-			print("self.dlg.lRegion.count() =", self.dlg.lRegion.count())
-			# Si liste des regions vide (soucis reseau ou autre) :
-			#if self.dlg.lRegion.count()<2:  self.getListAction(0) # Charger la liste
-			return
-		
 		win= iface.mainWindow()
 		#self.dlg = ui_control(None, Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint | Qt.WindowCloseButtonHint )
 		self.dlg = ui_control( win, Qt.Tool | Qt.WindowTitleHint | Qt.WindowCloseButtonHint )
@@ -151,7 +100,56 @@ class plugin(QObject):
 		
 		self.dlg.opacityMarker.setOpacity(float((self.color.alpha()/255))) 
 		self.dlg.opacityMarker.opacityChanged.connect(self.setColor)
+		return
 		
+		# ### OLD :
+		# self.dlg = ui_control(None, Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint | Qt.WindowCloseButtonHint )
+		# # fermeture de la fenetre du plugin on deroute sur une fonction interne
+		# self.dlg.closeEvent = self.close_Event
+		# ########################
+		# #INSERTION DES SIGNAUX #
+		# ########################
+		# self.dlg.bInfo.clicked.connect(self.getAbout)
+		# #self.dlg.lastWindowClosed.connect(self.closeDlg)
+		# self.dlg.bQuit.clicked.connect(self.closeDlg)
+		# self.dlg.bErase.clicked.connect(self.cleanSearch)
+		# self.dlg.lRegion.activated[int].connect(self.getListDepartements)
+		# self.dlg.lDepartement.activated[int].connect(self.getListCommunes)
+		# self.dlg.lCommune.activated[int].connect(self.getListSections)
+		# self.dlg.lCommune.editTextChanged.connect(self.getListSectionsByText)
+		# self.dlg.lCommune.activated[int].connect(self.updateCodecity)
+		# #self.dlg.lCommune.currentIndexChanged.connect(self.updateCodecity)
+		# self.dlg.lSection.activated[int].connect(self.getListParcelles)
+		# self.dlg.bZoom.clicked.connect(self.getLocation)
+		# self.dlg.adrin.returnPressed.connect(self.getLocationByAdress)
+		# self.dlg.colorMarker.setColor(self.color)
+		# self.dlg.colorMarker.colorChanged.connect(self.setColor)
+		# self.dlg.dynaMarker.clicked.connect(self.setMarker)
+		# self.dlg.scale.valueChanged.connect(self.setScale)
+
+		# self.dlg.opacityMarker.setOpacity(float((self.color.alpha()/255))) 
+		# self.dlg.opacityMarker.opacityChanged.connect(self.setColor)
+
+
+	def unload(self):
+		self.pluginMenu.parentWidget().removeAction(self.pluginMenu.menuAction()) # Remove from Extension menu
+		#self.iface.removePluginMenu("&Localiser Parcelle ou Adresse (Ban)",self.action)
+		iface.removeToolBarIcon(self.action)
+		iface.deregisterLocatorFilter(self.locator_filter)
+		self.locator_filter = None
+
+	#def close_Event(self, event): self.cleanMarker()
+
+
+	def run(self):
+		if self.lstListes: # Si l'écran a deja ete lancé dans cette session
+			self.dlg.show()
+			self.dlg.activateWindow()
+			print("self.dlg.lRegion.count() =", self.dlg.lRegion.count())
+			# Si liste des regions vide (soucis reseau ou autre) :
+			#if self.dlg.lRegion.count()<2:  self.getListAction(0) # Charger la liste
+			return
+			
 		self.dlg.show()
 		self.dlg.activateWindow()
 		
