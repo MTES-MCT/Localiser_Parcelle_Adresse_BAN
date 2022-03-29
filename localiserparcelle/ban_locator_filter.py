@@ -56,7 +56,7 @@ class BanLocatorFilter(QgsLocatorFilter):
 
 	def triggerResult(self, result):
 		(score, type_info, x, y) = result.userData
-		print("{} {}".format(str(x), str(y)))
+		#print(x, y) #print("{} {}".format(str(x), str(y)))
 		transformer = self.plugin.getTransformer(4326)
 		point = transformer.transform( QgsPointXY(x,y), QgsCoordinateTransform.ForwardTransform)
 		x, y = point[0], point[1]
