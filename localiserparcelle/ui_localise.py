@@ -108,7 +108,7 @@ class Ui_Dialog(object):
 		self.lSection.setInsertPolicy(QComboBox.NoInsert)
 		self.lSection.lineEdit().setPlaceholderText("Choisir la section")
 		
-		self.lParcelle = QComboBox(self.parcelle) #filteredComboBox(self.parcelle) #
+		self.lParcelle = filteredComboBox(self.parcelle) # QComboBox(self.parcelle) # 
 		self.lParcelle.setEditable(True)
 		self.lParcelle.setInsertPolicy(QComboBox.NoInsert)
 		self.lParcelle.lineEdit().setPlaceholderText("Choisir la parcelle")
