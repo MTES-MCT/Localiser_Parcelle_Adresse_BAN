@@ -65,38 +65,10 @@ class plugin(QObject):
 		self.color = QColor(0, 255, 0, 125)
 		
 		self.dlg = None
-		return
-		
-		### OLD :
-		self.dlg = ui_control(None, Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint | Qt.WindowCloseButtonHint )
-		# fermeture de la fenetre du plugin on deroute sur une fonction interne
-		self.dlg.closeEvent = self.close_Event
-		########################
-		#INSERTION DES SIGNAUX #
-		########################
-		self.dlg.bInfo.clicked.connect(self.getAbout)
-		#self.dlg.lastWindowClosed.connect(self.closeDlg)
-		self.dlg.bQuit.clicked.connect(self.closeDlg)
-		self.dlg.bErase.clicked.connect(self.cleanSearch)
-		self.dlg.lRegion.activated[int].connect(self.getListDepartements)
-		self.dlg.lDepartement.activated[int].connect(self.getListCommunes)
-		self.dlg.lCommune.activated[int].connect(self.getListSections)
-		self.dlg.lCommune.editTextChanged.connect(self.getListSectionsByText)
-		self.dlg.lCommune.activated[int].connect(self.updateCodecity)
-		#self.dlg.lCommune.currentIndexChanged.connect(self.updateCodecity)
-		self.dlg.lSection.activated[int].connect(self.getListParcelles)
-		self.dlg.bZoom.clicked.connect(self.getLocation)
-		self.dlg.adrin.returnPressed.connect(self.getLocationByAdress)
-		self.dlg.colorMarker.setColor(self.color)
-		self.dlg.colorMarker.colorChanged.connect(self.setColor)
-		self.dlg.dynaMarker.clicked.connect(self.setMarker)
-		self.dlg.scale.valueChanged.connect(self.setScale)
-
-		self.dlg.opacityMarker.setOpacity(float((self.color.alpha()/255))) 
-		self.dlg.opacityMarker.opacityChanged.connect(self.setColor)
 
 
 	def unload(self):
+		self.cleanMarker()
 		self.pluginMenu.parentWidget().removeAction(self.pluginMenu.menuAction()) # Remove from Extension menu
 		#self.iface.removePluginMenu("&Localiser Parcelle ou Adresse (Ban)",self.action)
 		iface.removeToolBarIcon(self.action)
@@ -136,12 +108,14 @@ class plugin(QObject):
 		self.dlg.lDepartement.activated[int].connect(self.getListCommunes)
 		self.dlg.bMajDep.released.connect( lambda: self.getListAction(1) )
 		self.dlg.lCommune.activated[int].connect(self.getListSections)
-		self.dlg.lCommune.editTextChanged.connect(self.getListSectionsByText)
+		#self.dlg.lCommune.editTextChanged.connect(self.getListSectionsByText)
 		self.dlg.lCommune.activated[int].connect(self.updateCodecity)
 		#self.dlg.lCommune.currentIndexChanged.connect(self.updateCodecity)
 		self.dlg.bMajCom.released.connect( lambda: self.getListAction(2) )
 		
 		self.dlg.lSection.activated[int].connect(self.getListParcelles)
+		self.dlg.lParcelle.editTextChanged.connect(self.findParcelleByText)
+		
 		self.dlg.bZoom.clicked.connect(self.getLocation)
 		self.dlg.adrin.returnPressed.connect(self.getLocationByAdress)
 		self.dlg.colorMarker.setColor(self.color)
@@ -189,9 +163,9 @@ class plugin(QObject):
 
 
 	def cleanSearch(self):
-		self.dlg.commune_adresse_disable('')
-		for j in range(3, 5): self.lstListes[j].clear(); self.lstListes[j].addItem(self.lstListes_label[j])
-		self.lstListes[2].setCurrentIndex(0)
+		#self.dlg.commune_adresse_disable('')
+		#for j in range(3, 5): self.lstListes[j].clear() #; self.lstListes[j].addItem(self.lstListes_label[j])
+		#self.lstListes[2].setCurrentIndex(0)
 		self.cleanMarker()
 
 	def cleanMarker(self):
@@ -205,11 +179,13 @@ class plugin(QObject):
 	def getListDepartements(self, index=0):
 		self.getListAction(1,False)
 	def getListCommunes(self, index=0):
-		self.dlg.lCommune.activated[int].disconnect(self.getListSections) #Eviter req commune
-		self.dlg.lCommune.editTextChanged.disconnect(self.getListSectionsByText)
+		self.dlg.lCommune.blockSignals(True)
+		#self.dlg.lCommune.activated[int].disconnect(self.getListSections) #Eviter req commune
+		#self.dlg.lCommune.editTextChanged.disconnect(self.getListSectionsByText)
 		self.getListAction(2,False)
-		self.dlg.lCommune.activated[int].connect(self.getListSections)
-		self.dlg.lCommune.editTextChanged.connect(self.getListSectionsByText)
+		#self.dlg.lCommune.activated[int].connect(self.getListSections)
+		#self.dlg.lCommune.editTextChanged.connect(self.getListSectionsByText)
+		self.dlg.lCommune.blockSignals(False)
 	def getListSectionsByText(self, text): 
 		text = self.dlg.lCommune.currentText()
 		index = self.dlg.lCommune.findText("%s" % (text))
@@ -220,7 +196,24 @@ class plugin(QObject):
 		except : pass
 
 	def getListSections(self, index): self.getListAction(3)
-	def getListParcelles(self, index): self.getListAction(4)
+	def getListParcelles(self, index):
+		self.dlg.lParcelle.blockSignals(True)
+		self.getListAction(4)
+		self.dlg.lParcelle.blockSignals(False)
+	
+	def findParcelleByText(self, text):
+		#text = self.dlg.lParcelle.currentText()
+		#text = text.lstrip("0") #if len(text)>1 : 
+		if text=='':
+			self.dlg.lParcelle.lineEdit().setStyleSheet("QLineEdit{background-color:#ffffff;}")
+			return
+		index = self.dlg.lParcelle.findText(text) #, Qt.MatchContains )  
+		if index < 0 or index > self.dlg.lParcelle.maxIndex-1:
+			self.dlg.lParcelle.lineEdit().setStyleSheet("QLineEdit{background-color:#ff9999}")
+			return
+		self.dlg.lParcelle.lineEdit().setStyleSheet("QLineEdit{background-color:#ffffff;}")
+		try:  self.dlg.lParcelle.setCurrentIndex(index)
+		except: pass
 
 	#######################################	
 	# REINITIALISATION DES LISTES D'APRES #
@@ -259,10 +252,15 @@ class plugin(QObject):
 		###################################
 		n = len(result)
 		for i in range(n):
-			if indexListe == 2 :
+			if   indexListe==1: libelle = "%s (%s)" % (result[i]["nom"], result[i]["code"])
+			elif indexListe==2:	libelle = "%s - %s" % (result[i]["code"], result[i]["nom"])
+			else: libelle = result[i]["nom"].lstrip("0")
+			#elif indexListe==4:	libelle = result[i]["nom"].lstrip("0")
+			#else: libelle = result[i]["nom"]
+			"""if indexListe == 2 :
 				libelle = "%s - %s" % (result[i]["code"], result[i]["nom"])
 			else :
-				libelle = "%s (%s)" % (result[i]["nom"], result[i]["code"]) if indexListe == 1 else result[i]["nom"]
+				libelle = "%s (%s)" % (result[i]["nom"], result[i]["code"]) if indexListe == 1 else result[i]["nom"] #"""
 			self.lstListes[indexListe].addItem(libelle)
 		try : self.lstListes[indexListe].getMaxIndex()
 		except : pass
