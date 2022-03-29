@@ -65,6 +65,12 @@ class plugin(QObject):
 		self.color = QColor(0, 255, 0, 125)
 		
 		self.dlg = None
+		self.marqueurDyna = False
+		### Rétablir la dernière valeur de zoom choisie par le user:
+		s = QSettings() # QGIS options settings
+		scale = s.value("%szoom" % self.settings, "" )
+		if scale == "" : scale = "100"
+		self.scaleZoom = int(scale)
 
 
 	def unload(self):
@@ -92,6 +98,8 @@ class plugin(QObject):
 		self.dlg = ui_control( win, Qt.Tool | Qt.WindowTitleHint | Qt.WindowCloseButtonHint )
 		# Il faut positionner le dialog MANUELLEMENT, sinon Qt va le repositionner automatiquement à chaque hide -> show :
 		self.dlg.setGeometry(win.geometry().x()+50,win.geometry().y()+50,200,200) #"""
+		
+		self.dlg.scale.setValue(self.scaleZoom)
 		
 		# fermeture de la fenetre du plugin on deroute sur une fonction interne
 		#self.dlg.closeEvent = self.close_Event
@@ -142,9 +150,6 @@ class plugin(QObject):
 		
 		### Rétablir la dernière région et dernier département choisi par le user:
 		s = QSettings() # QGIS options settings
-		scale = s.value("%szoom" % self.settings, "" )
-		if scale == "" : scale = "100"
-		self.dlg.scale.setValue(int(scale))
 		
 		region = s.value("%sregion" % self.settings, "" )
 		if region == "": return
@@ -350,11 +355,12 @@ class plugin(QObject):
 		return point.x(), point.y()
 
 	def setMarker(self):
+		self.marqueurDyna = self.dlg.dynaMarker.isChecked()
 		if self.marker :
 			mc = self.iface.mapCanvas()
 			x, y = self.getMarkerLocationInMapCoordinates(self.marker)
 			self.cleanMarker()
-			self.marker = dynaLocationMarker(mc, x, y, self.color) if self.dlg.dynaMarker.isChecked() else basicLocationMarker(mc, x, y, self.color)
+			self.marker = dynaLocationMarker(mc, x, y, self.color) if self.marqueurDyna else basicLocationMarker(mc, x, y, self.color)
 			self.tmpGeometry.append(self.marker)
 			mc.refresh()
 
@@ -366,6 +372,11 @@ class plugin(QObject):
 
 
 	def setScale(self):
+		self.scaleZoom = self.dlg.scale.value()
+		# Memoriser le parametre "Zoom" :
+		s = QSettings()
+		s.setValue("%szoom" % self.settings, self.scaleZoom )
+		
 		if self.marker :
 				x, y = self.getMarkerLocationInMapCoordinates(self.marker)
 				mc = self.iface.mapCanvas()
@@ -383,25 +394,21 @@ class plugin(QObject):
 	def zoomTo(self, x, y, x1, y1):
 		# Zoomer sur rectangle englobant
 		mc = self.iface.mapCanvas()
+		
 		# modif 2.2 gestion exception et mis a echelle 0
 		try:
-			if self.iface.mapCanvas().mapUnits()==0: scale = self.dlg.scale.value() #si unités en metres
+			if self.iface.mapCanvas().mapUnits()==0: scale = self.scaleZoom #si unités en metres
 			else: scale = 0 #pas des metres donc on ne peut pas utiliser ce parametre.
 		except Exception as e: scale = 0
-		
 		rect = QgsRectangle(x -scale, y -scale, x1 + scale, y1 + scale)
 		mc.setExtent(rect)
 
 		self.cleanMarker()
 		
-		self.marker = dynaLocationMarker(mc, rect.center().x(), rect.center().y(), self.color) if self.dlg.dynaMarker.isChecked() else basicLocationMarker(mc, rect.center().x(), rect.center().y(), self.color)
+		self.marker = dynaLocationMarker(mc, rect.center().x(), rect.center().y(), self.color) if self.marqueurDyna else basicLocationMarker(mc, rect.center().x(), rect.center().y(), self.color)
+		#self.marker = dynaLocationMarker(mc, rect.center().x(), rect.center().y(), self.color) if self.dlg.dynaMarker.isChecked() else basicLocationMarker(mc, rect.center().x(), rect.center().y(), self.color)
 		self.tmpGeometry.append(self.marker)
 		mc.refresh()
-
-		# Memoriser le parametre "Zoom" :
-		s = QSettings()
-		scale = self.dlg.scale.value()
-		s.setValue("%szoom" % self.settings, scale )
 
 
 	def updateCodecity(self, idx):
