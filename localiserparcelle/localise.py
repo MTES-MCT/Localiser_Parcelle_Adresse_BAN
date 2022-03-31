@@ -61,16 +61,16 @@ class plugin(QObject):
 		
 		self.barInfo = iface.messageBar() 
 		self.barInfo.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
-		self.dlg, self.marker = None, None
 		self.color = QColor(0, 255, 0, 125)
 		
 		self.dlg = None
-		self.marqueurDyna = False
-		### Rétablir la dernière valeur de zoom choisie par le user:
+		self.marker = None
+		### Rétablir la dernière valeur du zoom et l'option de marqueur choisies par le user:
 		s = QSettings() # QGIS options settings
-		scale = s.value("%szoom" % self.settings, "" )
-		if scale == "" : scale = "100"
+		scale = s.value("%szoom" % self.settings, "100")
 		self.scaleZoom = int(scale)
+		self.marqueurDyna = s.value("%smarker" % self.settings, False, type=bool)
+
 
 
 	def unload(self):
@@ -81,7 +81,6 @@ class plugin(QObject):
 		iface.deregisterLocatorFilter(self.locator_filter)
 		self.locator_filter = None
 
-	#def close_Event(self, event): self.cleanMarker()
 
 
 	def run(self):
@@ -98,8 +97,6 @@ class plugin(QObject):
 		self.dlg = ui_control( win, Qt.Tool | Qt.WindowTitleHint | Qt.WindowCloseButtonHint )
 		# Il faut positionner le dialog MANUELLEMENT, sinon Qt va le repositionner automatiquement à chaque hide -> show :
 		self.dlg.setGeometry(win.geometry().x()+50,win.geometry().y()+50,200,200) #"""
-		
-		self.dlg.scale.setValue(self.scaleZoom)
 		
 		# fermeture de la fenetre du plugin on deroute sur une fonction interne
 		#self.dlg.closeEvent = self.close_Event
@@ -128,7 +125,9 @@ class plugin(QObject):
 		self.dlg.adrin.returnPressed.connect(self.getLocationByAdress)
 		self.dlg.colorMarker.setColor(self.color)
 		self.dlg.colorMarker.colorChanged.connect(self.setColor)
+		self.dlg.dynaMarker.setChecked(self.marqueurDyna) # init dans initGui
 		self.dlg.dynaMarker.clicked.connect(self.setMarker)
+		self.dlg.scale.setValue(self.scaleZoom) # init dans initGui
 		self.dlg.scale.valueChanged.connect(self.setScale)
 		
 		self.dlg.opacityMarker.setOpacity(float((self.color.alpha()/255))) 
@@ -356,6 +355,7 @@ class plugin(QObject):
 
 	def setMarker(self):
 		self.marqueurDyna = self.dlg.dynaMarker.isChecked()
+		QSettings().setValue("%smarker" % self.settings, self.marqueurDyna) # Memoriser le parametre "marqueurDyna"
 		if self.marker :
 			mc = self.iface.mapCanvas()
 			x, y = self.getMarkerLocationInMapCoordinates(self.marker)
@@ -373,9 +373,7 @@ class plugin(QObject):
 
 	def setScale(self):
 		self.scaleZoom = self.dlg.scale.value()
-		# Memoriser le parametre "Zoom" :
-		s = QSettings()
-		s.setValue("%szoom" % self.settings, self.scaleZoom )
+		QSettings().setValue("%szoom" % self.settings, self.scaleZoom ) # Memoriser le parametre "Zoom"
 		
 		if self.marker :
 				x, y = self.getMarkerLocationInMapCoordinates(self.marker)
