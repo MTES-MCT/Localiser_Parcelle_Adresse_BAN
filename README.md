@@ -1,7 +1,8 @@
 # Localiser Parcelle Adresse (BAN)
 **Une extension pour QGIS**  
 Cette extension interroge des services réseau (par http)  
- pour localiser :  
+
+pour localiser :  
 
 **Une commune, une section ou une parcelle cadastrale**  
 Cette fonction communique avec le service web de géolocalisation du Ministère de la Transition Ecologique et Solidaire. Il fournit plusieurs échelles administratives : Région, Département, Commune, Section, Parcelle.  
