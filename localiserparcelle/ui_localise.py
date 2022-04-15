@@ -419,8 +419,8 @@ class AutocompleteBanLineEdit(QgsFilterLineEdit):
 	def set_codecity(self, codecity):
 		self.codecity= str(codecity)
 		
-	def on_result_selected(self, result_index):
-		# Sélection faite, stockage du résultat dans la search_result
+	def on_result_selected(self, result_index): ## Sélection faite, stockage du résultat dans la search_result
+		if result_index.row() >= len(self.search_results):  return # Si user clique trop vite sur liste non maj apres saisie
 		self.search_result = self.search_results[result_index.row()]
 		self.clear_suggestions() 
 
