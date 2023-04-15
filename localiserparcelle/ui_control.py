@@ -27,16 +27,16 @@ class ui_control(QDialog, Ui_Dialog):
 
 	def set_dialog_busy(self, dialogShouldBeBusy=True):
 		"""fonction qui rend l'interface occupée et l'indique à l'utilisateur"""
-		s = QSettings()
-		networkTimeout = s.value( "Qgis/networkAndProxy/networkTimeout", "60000" ) # Par defaut, c'est 60000
+		#s = QSettings()
+		#networkTimeout = s.value( "Qgis/networkAndProxy/networkTimeout", "60000" ) # Par defaut, c'est 60000
 		if dialogShouldBeBusy:
-			s.setValue( "Qgis/networkAndProxy/networkTimeout", "10000" ) #  Imposer un délai de 10 secondes
+			#s.setValue( "Qgis/networkAndProxy/networkTimeout", "10000" ) #  Imposer un délai de 10 secondes
 			# Afficher un sablier à la place du curseur :
 			self.busyIndicator.setVisible(True)
 			QApplication.setOverrideCursor(Qt.WaitCursor)
 			QApplication.processEvents()
 		else:
-			s.setValue( "Qgis/networkAndProxy/networkTimeout", networkTimeout ) # Retablir le parametre d'origine
+			#s.setValue( "Qgis/networkAndProxy/networkTimeout", networkTimeout ) # Retablir le parametre d'origine
 			QApplication.restoreOverrideCursor()  # Retablir le curseur d'origine
 			self.busyIndicator.setVisible(False)
 
