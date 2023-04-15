@@ -228,13 +228,16 @@ class plugin(QObject):
 			if index==self.indexPrecedent: return
 			else:  self.indexPrecedent = index
 		
-		s = QSettings() 
 		for j in range(indexListe, 5):
 			self.lstListes[j].clear() #; self.lstListes[j].addItem(self.lstListes_label[j])
 		
 		#############################################
 		# RECUPERATION des DONNEES SERVICE CARTELIE #
 		#############################################
+		s = QSettings()
+		networkTimeout = s.value("Qgis/networkAndProxy/networkTimeout", "60000") # Sauver le param Timeout
+		s.setValue("Qgis/networkAndProxy/networkTimeout", "20000") #  Imposer un délai de 20 secondes
+		
 		if indexListe > 0:
 			index = self.lstListes[indexListe-1].currentIndex() # currentIndex()-1
 			if index < 0 or index >= len(self.results[indexListe-1]) : return
@@ -242,6 +245,8 @@ class plugin(QObject):
 			result = self.cartelie.appel(indexListe, code, forcerMAJ=MAJ)
 		else:
 			result = self.cartelie.appel(indexListe, forcerMAJ=MAJ)
+		
+		s.setValue("Qgis/networkAndProxy/networkTimeout", networkTimeout ) # Retablir le parametre d'origine
 		
 		if not result:
 			self.dlg.set_dialog_busy(False)
