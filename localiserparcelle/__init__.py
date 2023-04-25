@@ -22,6 +22,7 @@
  ***************************************************************************/
 """
 
+
 def classFactory(iface):
-	from .localise import plugin
-	return plugin(iface)
+    from .localise import plugin
+    return plugin(iface)
