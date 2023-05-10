@@ -1,6 +1,6 @@
 [general]
 name=Localiser Parcelle Adresse (BAN)
-version=3.5.7
+version=3.5.8
 qgisMinimumVersion=3.0
 
 description= Localiser Parcelle Adresse (BAN) permet de localiser des lieux : communes, parcelles cadastrales ou adresse
