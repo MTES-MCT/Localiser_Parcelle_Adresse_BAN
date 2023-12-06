@@ -265,7 +265,8 @@ class AdresseBanFinder(HttpFinder):
 class CartelieFinder(HttpFinder):
 	def __init__(self, parent=None): #, indexListe, code=None, parent=None):
 		HttpFinder.__init__(self, parent)
-		self.URL = 'http://cartelie.application.developpement-durable.gouv.fr/cartelie/localize?'
+		self.URL = 'https://georef.application.developpement-durable.gouv.fr/geoservices/api/v1/localize?'
+		self.URL2 = 'http://cartelie.application.developpement-durable.gouv.fr/cartelie/localize?'
 		self.params = { 'niveauBase':'0', 'niveau':'0', 'projection':'EPSG_2154' }
 		
 		## Dossier où enregistrer les datas web en cache pour limiter les requetes
@@ -308,17 +309,19 @@ class CartelieFinder(HttpFinder):
 			self.params['parent'] = str(code)
 		self.search_results = []
 		self.send_request(self.URL, self.params)
-		#print("Appel Cartelie : ", self.URL, self.params)		#print("self.data : ", self.data)
 		
-		if not self.data:
-			print("Erreur réseau :", self.erreurs) #self.log("Erreur réseau: "+ self.erreurs, 'erreur')
-			##self.erreurs += "Erreur réseau: {}\n {} \n {}".format(self.erreurs,self.URL,str(self.params))
+		if not self.data or self.data==[]:
+			print("Erreur réseau : ", self.URL, self.erreurs) #self.log("Erreur réseau: "+ self.erreurs, 'erreur')
+			#self.erreurs += "Erreur réseau: {}\n {} \n {}".format(self.erreurs,self.URL,str(self.params))
 			#self.messageBar.pushMessage('Erreur réseau', 'URL injoignable : '+self.URL, Qgis.Warning, 10)
-			return False
-		if self.data==[]:
-			print("Aucune donnée reçue : ", self.URL, self.params)
-			#self.messageBar.pushMessage('Aucune donnée reçue', 'URL : '+self.URL, Qgis.Warning, 5)
-			return False
+			## Tester avec la 2è URL (serveur cartelie) :
+			print("Tester la requete avec URL2 :", self.URL2)
+			self.send_request(self.URL2, self.params)
+			if not self.data or self.data==[]:  return False
+		#if self.data==[]:
+		#	print("Aucune donnée reçue : ", self.URL, self.params)
+		#	#self.messageBar.pushMessage('Aucune donnée reçue', 'URL : '+self.URL, Qgis.Warning, 5)
+		#	return False
 		
 		if ficCache: ## Si chemin ficCache défini, sauvegarder self.data en cache:
 			with codecs.open(ficCache, 'w', 'utf-8', 'ignore') as F:

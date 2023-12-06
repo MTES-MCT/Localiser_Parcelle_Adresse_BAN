@@ -250,9 +250,11 @@ class plugin(QObject):
 		
 		if not result:
 			self.dlg.set_dialog_busy(False)
-			QMessageBox.warning( self.dlg, "Erreur réseau", 'Serveur de localisation (Cartélie) injoignable :'
-				+"\n 1. Vérifier vos paramètres réseau:\n   Préférences > Options > Réseau > Proxy"
-				+"\n 2. Réessayer plus tard ..." )
+			QMessageBox.warning( self.dlg, "Erreur réseau",
+				'Serveurs de localisation (Géoref et Cartélie) injoignables :'
+				+"\n 1. Ces serveurs centraux sont peut-être hors-service."
+				+"\n 2. Ou bien il y a un problème sur votre réseau ou celui du ministère.\n\n"
+				+"Vous pouvez aussi vérifier vos paramètres réseau:\n   Préférences > Options > Réseau > Proxy" )
 			return
 
 		self.results[indexListe] = result
