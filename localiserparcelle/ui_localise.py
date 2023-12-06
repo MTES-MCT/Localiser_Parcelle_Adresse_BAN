@@ -156,15 +156,17 @@ class Ui_Dialog(object):
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.gridLayout_2.addLayout(self.horizontalLayout, 4, 1, 1, 4)
         #
+        self.bZoom = QPushButton(self.GroupBox)
+        self.bZoom.setDefault(True)
+        self.bZoom.setObjectName("bZoom")
+        self.bZoom.setStyleSheet("QPushButton { padding:3px 50px; font-weight:bold; }")
+        #self.bZoom.setStyleSheet("QPushButton { padding:2px 60px; background-color:#00eeee; border:1px solid #888; border-radius:3px; border-style:outset; font-size:12pt; font-weight:bold; color:#090909; }")
+        self.horizontalLayout.addWidget(self.bZoom)
+        #
         self.bErase = QPushButton(self.GroupBox)
         self.bErase.setAutoDefault(False)
         self.bErase.setObjectName("bErase")
         self.horizontalLayout.addWidget(self.bErase)
-        #
-        self.bZoom = QPushButton(self.GroupBox)
-        self.bZoom.setDefault(True)
-        self.bZoom.setObjectName("bZoom")
-        self.horizontalLayout.addWidget(self.bZoom)
         #
         self.busyIndicator = QgsBusyIndicatorDialog(
             '', self, fl=Qt.WindowFlags())  # Widget)
@@ -265,13 +267,12 @@ class Ui_Dialog(object):
         self.infracommune.setCurrentIndex(1)
         QMetaObject.connectSlotsByName(self)
         self.lCommune.setFocus()
+        self.setTabOrder(self.lRegion, self.lDepartement)
+        self.setTabOrder(self.lDepartement, self.lCommune)
         self.setTabOrder(self.lCommune, self.lSection)
         self.setTabOrder(self.lSection, self.lParcelle)
-        self.setTabOrder(self.lParcelle, self.adrin)
-        self.setTabOrder(self.adrin, self.bZoom)
-        self.setTabOrder(self.bZoom, self.lRegion)
-        self.setTabOrder(self.lRegion, self.lDepartement)
-        self.setTabOrder(self.lDepartement, self.bInfo)
+        self.setTabOrder(self.lParcelle, self.bZoom)
+        self.setTabOrder(self.bZoom, self.bInfo)
 
     def resizeEvent(self, event):
         self.adrin.setGeometry(5, 23, self.width()-60, 26)
@@ -294,9 +295,9 @@ class Ui_Dialog(object):
         self.ladrin.setText(_translate("Dialog", "N° et /ou voie :", None))
         self.infracommune.setTabText(self.infracommune.indexOf(
             self.adresse), _translate("Dialog", "Adresse", None))
-        self.bErase.setText(_translate("Dialog", "Effacer", None))
-        self.bQuit.setText(_translate("Dialog", "Masquer", None))
         self.bZoom.setText(_translate("Dialog", "Localiser", None))
+        self.bErase.setText(_translate("Dialog", "Effacer le marqueur", None))
+        self.bQuit.setText(_translate("Dialog", "Fermer", None))
         self.optionGroupBox.setTitle("%s :" % _translate(
             "Dialog", "Options du marqueur", None))
         self.lblScale.setText("%s :" % _translate(
